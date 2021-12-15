@@ -1,0 +1,8 @@
+{
+    "apps": [{
+        "name": "super_people",
+        "script": "main.py",
+        "interpreter": "python3.7",
+        "interpreter_args": "-u"
+    }]
+}
