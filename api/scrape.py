@@ -18,7 +18,7 @@ def remove_tags(text):
 class Sppl:
     def news(self):
         article_list_url = (
-            "https://geegee.net/_next/data/-KK8Sf5jQy0DpZ-l3tmo3/en/news.json"
+            "https://geegee.net/_next/data/-1bgq3XipIFXs3OIqV3Oz/en/news.json"
         )
 
         # https://geegee.net/_next/data/-KK8Sf5jQy0DpZ-l3tmo3/en/news/detail.json?news_id=b68jai9qpqf4&display_type=sub
@@ -32,7 +32,7 @@ class Sppl:
         for each in base:
             post_id = each["news_id"]
             post_url = f"https://geegee.net/en/news/detail?news_id={post_id}&display_type=sub"
-            post_api = f"https://geegee.net/_next/data/-KK8Sf5jQy0DpZ-l3tmo3/en/news/detail.json?news_id={post_id}&display_type=sub"
+            post_api = f"https://geegee.net/_next/data/-1bgq3XipIFXs3OIqV3Oz/en/news/detail.json?news_id={post_id}&display_type=sub"
             post_response = requests.get(post_api, headers=headers)
             post_response_json = post_response.json()
             post_details = post_response_json["pageProps"]["initialReduxState"]["news"]["getDetailNewsRes"]["res"][
