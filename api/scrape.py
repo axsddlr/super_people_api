@@ -1,6 +1,8 @@
+import json
 import re
 
 import requests
+from bs4 import BeautifulSoup
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -17,38 +19,42 @@ def remove_tags(text):
 
 class Sppl:
     def news(self):
-        article_list_url = (
-            "https://geegee.net/_next/data/-1bgq3XipIFXs3OIqV3Oz/en/news.json"
-        )
+        article_list_url = "https://geegee.net/en/news"
 
         # https://geegee.net/_next/data/-KK8Sf5jQy0DpZ-l3tmo3/en/news/detail.json?news_id=b68jai9qpqf4&display_type=sub
-        response = requests.get(article_list_url, headers=headers)
-        responseJSON = response.json()
-        status = response.status_code
+        r = requests.get(article_list_url, headers=headers)
+        soup = BeautifulSoup(r.content, "lxml")
+        status = r.status_code
 
-        base = responseJSON["pageProps"]["initialReduxState"]["news"]["getSubNewsListRes"]["res"]["news_list"]
+        data = soup.find("script", id="__NEXT_DATA__").text
+
+        jsondata = json.loads(data)
+        base = jsondata["props"]["pageProps"]["initialReduxState"]["news"]["getSubNewsListRes"]["res"]["news_list"]
 
         api = []
         for each in base:
             post_id = each["news_id"]
             post_url = f"https://geegee.net/en/news/detail?news_id={post_id}&display_type=sub"
-            post_api = f"https://geegee.net/_next/data/-1bgq3XipIFXs3OIqV3Oz/en/news/detail.json?news_id={post_id}&display_type=sub"
-            post_response = requests.get(post_api, headers=headers)
-            post_response_json = post_response.json()
-            post_details = post_response_json["pageProps"]["initialReduxState"]["news"]["getDetailNewsRes"]["res"][
-                "news"]
+            r = requests.get(post_url, headers=headers)
+            articles = BeautifulSoup(r.content, "lxml")
 
-            excerpt = post_details["detail_content"]
-            summary = post_details["summary"]
-            thumbnail = post_details["resource_list"]["resource_cdn_url"]
-            title = post_details["title"]
-            published = post_details["created_ts"]
+            title = articles.find("h2").text.strip()
+            published = articles.find("span", {"class": "css-e9hs7k e1myrdfa3"}).text.strip()
+            thumbnail = each["resource_list"]["resource_cdn_url"]
+
+            summary = articles.findChildren('h3')
+
+            try:
+                for head in articles.select("h3:nth-of-type(1)"):
+                    if head is not None:
+                        summary = head.text.strip()
+            except:
+                summary = "nope"
 
             api.append(
                 {
                     "title": title,
                     "summary": summary,
-                    # "body": remove_tags(excerpt),
                     "thumbnail": thumbnail,
                     "url": post_url,
                     "publishDate": published,
