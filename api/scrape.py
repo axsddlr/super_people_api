@@ -18,38 +18,44 @@ def remove_tags(text):
 
 
 class Sppl:
-    def news(self):
+    @staticmethod
+    def news():
         article_list_url = "https://geegee.net/en/news"
 
-        # https://geegee.net/_next/data/-KK8Sf5jQy0DpZ-l3tmo3/en/news/detail.json?news_id=b68jai9qpqf4&display_type=sub
+        # bs4 for article list via NEXTJS props
         r = requests.get(article_list_url, headers=headers)
-        soup = BeautifulSoup(r.content, "lxml")
+        articles = BeautifulSoup(r.content, "lxml")
         status = r.status_code
 
-        data = soup.find("script", id="__NEXT_DATA__").text
+        data = articles.find("script", id="__NEXT_DATA__").text
 
-        jsondata = json.loads(data)
-        base = jsondata["props"]["pageProps"]["initialReduxState"]["news"]["getSubNewsListRes"]["res"]["news_list"]
+        article_list_data = json.loads(data)
+        article_base = article_list_data["props"]["pageProps"]["initialReduxState"]["news"]["getSubNewsListRes"]["res"]["news_list"]
 
         api = []
-        for each in base:
+        for each in article_base:
             post_id = each["news_id"]
             post_url = f"https://geegee.net/en/news/detail?news_id={post_id}&display_type=sub"
+
+            # bs4 for post detail via NEXTJS props
             r = requests.get(post_url, headers=headers)
-            articles = BeautifulSoup(r.content, "lxml")
+            post = BeautifulSoup(r.content, "lxml")
+            status = r.status_code
 
-            title = articles.find("h2").text.strip()
-            published = articles.find("span", {"class": "css-e9hs7k e1myrdfa3"}).text.strip()
-            thumbnail = each["resource_list"]["resource_cdn_url"]
+            post_scrape = post.find("script", id="__NEXT_DATA__").text
 
-            summary = articles.findChildren('h3')
+            post_scrape_data = json.loads(post_scrape)
+            buildId = post_scrape_data["buildId"]
+            post_url_json = f"https://geegee.net/_next/data/{buildId}/en/news/detail.json?news_id={post_id}&display_type=sub"
+            post = requests.get(post_url_json, headers=headers)
+            post_response = post.json()
+            post_base = post_response["pageProps"]["initialReduxState"]["news"]["getDetailNewsRes"]["res"]["news"]
 
-            try:
-                for head in articles.select("h3:nth-of-type(1)"):
-                    if head is not None:
-                        summary = head.text.strip()
-            except:
-                summary = "nope"
+            summary = post_base["summary"]
+            summary_full = post_base["detail_content"]
+            title = post_base["title"]
+            thumbnail = post_base["resource_list"]["resource_cdn_url"]
+            published = post_base["created_ts"]
 
             api.append(
                 {
@@ -58,11 +64,16 @@ class Sppl:
                     "thumbnail": thumbnail,
                     "url": post_url,
                     "publishDate": published,
+                    "summary_full": remove_tags(summary_full),
                 }
             )
-
+        #
         data = {"status": status, "data": api}
 
         if status != 200:
             raise Exception("API response: {}".format(status))
         return data
+
+
+if __name__ == '__main__':
+    Sppl.news()
