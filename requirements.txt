@@ -4,3 +4,4 @@ uvicorn[standard]==0.16.0
 beautifulsoup4==4.10.0
 lxml==4.6.4
 ujson==5.1.0
+slowapi==0.1.5

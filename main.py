@@ -1,27 +1,41 @@
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI, Request
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
 from api.scrape import Sppl
-from ratelimit import limits
+
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Unofficial Super People API",
     description="An Unofficial REST API for [Super People](https://geegee.net/en/news), Made by [Andre Saddler]("
                 "https://github.com/axsddlr)",
-    version="1.0.0",
+    version="1.0.1",
     docs_url="/",
     redoc_url=None,
 )
 
+# init limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # init classes
 super_people = Sppl()
 
-TWO_MINUTES = 150
 
-
-@limits(calls=250, period=TWO_MINUTES)
 @app.get("/news", tags=["News"])
-def latest_super_people_news():
-    return super_people.news()
+@limiter.limit("250/minute")
+def latest_super_people_news(request: Request, cat):
+    """
+    notice\n
+    update\n
+    news\n
+    event\n
+    tournament\n
+    """
+    return super_people.news(cat)
 
 
 if __name__ == "__main__":

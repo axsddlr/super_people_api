@@ -19,43 +19,24 @@ def remove_tags(text):
 
 class Sppl:
     @staticmethod
-    def news():
-        article_list_url = "https://geegee.net/en/news"
+    def news(cat):
+        new_article_url = f"https://api.geegee.net/v1/public/news/b02t0wwj4t8g/sub/type/{cat}/0/list?project_id=b02t0wwj4t8g&display_type=sub&last_news_id=0&news_type={cat}&lang_code=en"
 
-        # bs4 for article list via NEXTJS props
-        r = requests.get(article_list_url, headers=headers)
-        articles = BeautifulSoup(r.content, "lxml")
+        r = requests.get(new_article_url, headers=headers)
         status = r.status_code
 
-        data = articles.find("script", id="__NEXT_DATA__").text
-
-        article_list_data = json.loads(data)
-        article_base = article_list_data["props"]["pageProps"]["initialReduxState"]["news"]["getSubNewsListRes"]["res"]["news_list"]
+        data_base = r.json()["res"]["news_list"]
 
         api = []
-        for each in article_base:
+        for each in data_base:
             post_id = each["news_id"]
-            post_url = f"https://geegee.net/en/news/detail?news_id={post_id}&display_type=sub"
+            post_url = f"https://api.geegee.net/v1/public/news/b02t0wwj4t8g/sub/{post_id}"
 
-            # bs4 for post detail via NEXTJS props
-            r = requests.get(post_url, headers=headers)
-            post = BeautifulSoup(r.content, "lxml")
-            status = r.status_code
-
-            post_scrape = post.find("script", id="__NEXT_DATA__").text
-
-            post_scrape_data = json.loads(post_scrape)
-            buildId = post_scrape_data["buildId"]
-            post_url_json = f"https://geegee.net/_next/data/{buildId}/en/news/detail.json?news_id={post_id}&display_type=sub"
-            post = requests.get(post_url_json, headers=headers)
-            post_response = post.json()
-            post_base = post_response["pageProps"]["initialReduxState"]["news"]["getDetailNewsRes"]["res"]["news"]
-
-            summary = post_base["summary"]
-            summary_full = post_base["detail_content"]
-            title = post_base["title"]
-            thumbnail = post_base["resource_list"]["resource_cdn_url"]
-            published = post_base["created_ts"]
+            summary = each["summary"]
+            summary_full = each["detail_content"]
+            title = each["title"]
+            thumbnail = each["resource_list"]["resource_cdn_url"]
+            published = each["created_ts"]
 
             api.append(
                 {
@@ -64,7 +45,6 @@ class Sppl:
                     "thumbnail": thumbnail,
                     "url": post_url,
                     "publishDate": published,
-                    "summary_full": remove_tags(summary_full),
                 }
             )
         #
@@ -76,4 +56,4 @@ class Sppl:
 
 
 if __name__ == '__main__':
-    Sppl.news()
+    Sppl.news("update")
